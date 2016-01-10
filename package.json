@@ -1,0 +1,36 @@
+{
+  "name": "Dynamo_Config",
+  "version": "0.0.1",
+  "description": "Serves a UI for multitenant configurations saved with AWS DynamoDB",
+  "author": "Aaron Votre <avotre422@gmail.org>",
+  "main": "",
+  "repository": {
+    "type": "git",
+    "url": "TODO"
+  },
+  "keywords": [
+    "dynamo",
+    "configurations"
+  ],
+  "dependencies": {
+    "async": "~0.8.0",
+    "aws-sdk": "^2.2.26",
+    "express": "4.2.x",
+    "primus": "*",
+    "underscore": "^1.8.3",
+    "webpack-stream": "^3.1.0",
+    "winston": "git://github.com/flatiron/winston#master"
+  },
+  "devDependencies": {
+    "assume": "<1.0.0 || >=2.3.1 <2.4.5 || >=2.5.2 <3.0.0",
+    "gulp": "^3.9.0",
+    "pre-commit": "*",
+    "vows": "^0.7.0"
+  },
+  "preferGlobal": true,
+  "private": true,
+  "publishConfig": {
+    "analyze": true,
+    "license": "MIT"
+  }
+}
