@@ -9,20 +9,8 @@ var _ = require('underscore');
 
 var dynamo = new (require('./dynamoWrapper'))();
 
-app.route('/')
-  .get(function(request, response) {
-  	console.log("GET hit");
-  	response.send("GET");
-  })
-  .post(function(request, response) {
-  	console.log("POST hit");
-  	response.send("POST");
-  })
-  .put(function(request, response) {
-  	console.log("PUT hit");
-    response.send('PUT');
-  });
-
+var awsStyle = { "testPut" : {"S" : "harpsichord"}};
+var myDynamo = { type: "S", name: "testPut", value: "harpsichord" };
 
 // Client specific
 app.route('/customer/:customer')
@@ -32,7 +20,7 @@ app.route('/customer/:customer')
   })
   .put(function(req, res) {
     console.log("Put content in the customer table for : "+req.params.customer);
-    dynamo.putCustomer(res, req.params.customer, [{ type: "S", name: "testPut", value: "Success" }] );
+    dynamo.putCustomer(res, req.params.customer, [myDynamo] );
   })
   .delete(function(req, res) {
     console.log("Delete from the customer table : "+req.params.customer);

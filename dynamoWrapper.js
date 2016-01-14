@@ -1,7 +1,7 @@
 // Simplify AWS Dynamo SDK
 var AWS = require('aws-sdk');
 var _ = require('underscore');
-var Converter = new (require('./dynamoConverter'))();
+var Converter = new (require('./dynamoConverter'))("EasyConfig");
 
 AWS.config.update({
   region: 'us-west-2',
@@ -10,23 +10,14 @@ AWS.config.update({
 
 var dynamodb = new AWS.DynamoDB();
 
+// API
+// 1) describe  (responseObject)
+// 2) newTable  (responseObject, tableName) - NOT FINISHED
+// 3) listTables(responseObject)
+// 4) get       (responseObject, customer)
+// 5) put       (responseObject, customer, value) - CONVERT 'value' TO ITEM
+// 6) customers (responseObject)
 var DynamoWrapper = function() {
-
-    // Standardize Stuff
-    // var item = {
-    //     type: "S",
-    //     name: "fieldName",
-    //     value: "valueOfSaidField"
-    // }
-    // customer = String name (primary key)
-
-    // API
-    // 1) describe  (responseObject)
-    // 2) newTable  (responseObject, tableName) - NOT FINISHED
-    // 3) listTables(responseObject)
-    // 4) get       (responseObject, customer)
-    // 5) put       (responseObject, customer, value) - CONVERT 'value' TO ITEM
-    // 6) customers (responseObject)
 
     this.describe = function(responseObject) {
         var params = {
@@ -84,15 +75,13 @@ var DynamoWrapper = function() {
 
     this.getCustomer = function(responseObject, customer) {
 
-        var params = { 
-          TableName: 'EasyConfig',
-          ConsistentRead: false,
-          Key: {
-            "CustomerId" : { "S" : customer }
-          },
-          ReturnConsumedCapacity: 'TOTAL'
+        var customerItem = {
+          name: "CustomerId",
+          type: "S",
+          value: customer
         }
 
+        var params = Converter.createAwsGetItem(customerItem);
 
         dynamodb.getItem(params, function(err, data) {
           if (err) {
@@ -106,18 +95,9 @@ var DynamoWrapper = function() {
 
     this.putCustomer = function(responseObject, customer, itemArray) {
 
-        var params = Converter.itemsToAwsNotation('EasyConfig', customer, itemArray);
+        itemArray.push({type: "S", name: "CustomerId", value: customer});
 
-        // var params = {
-        //   TableName: 'EasyConfig',
-        //   Item: {
-        //     "CustomerId": { "S" : customer },
-        //     "aThing": { "S": toSave },
-        //   },
-        //   ReturnConsumedCapacity: 'TOTAL',
-        //   ReturnItemCollectionMetrics: 'SIZE',
-        //   ReturnValues: 'NONE'
-        // };
+        var params = Converter.createAwsPutItem(itemArray);
 
         dynamodb.putItem(params, function(err, data) {
           if (err) {
