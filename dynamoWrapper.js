@@ -1,7 +1,6 @@
 // Simplify AWS Dynamo SDK
 var AWS = require('aws-sdk');
 var _ = require('underscore');
-var Converter = new (require('./dynamoConverter'))("EasyConfig");
 
 AWS.config.update({
   region: 'us-west-2',
@@ -11,18 +10,34 @@ AWS.config.update({
 var dynamodb = new AWS.DynamoDB();
 
 // API
-// 1) describe  (responseObject)
-// 2) newTable  (responseObject, tableName) - NOT FINISHED
-// 3) listTables(responseObject)
-// 4) get       (responseObject, customer)
-// 5) put       (responseObject, customer, value) - CONVERT 'value' TO ITEM
-// 6) customers (responseObject)
-var DynamoWrapper = function() {
+// 1) setConverter  (converter)
+// 2) setTableName  (tableName)
+// 3) describe      (responseObject)
+// 4) listTables    (responseObject)
+// 5) customers     (responseObject)
+// 6) getCustomer   (responseObject, Item*)
+// 7) putCustomer   (responseObject, itemArray*)
+// 8) newTable      (responseObject, tableName, keyArray, attributeArray)
 
+// ** Item is awsForm or myForm (requires converter);
+var DynamoWrapper = function(table) {
+    var tableName = table;
+    var converter;
+
+// 1)
+    this.setConverter = function(converter) {
+        this.converter = converter;
+    }
+
+// 2)
+    this.setTableName = function(name) {
+        tableName = name;
+    }
+
+// 3)
     this.describe = function(responseObject) {
-        var params = {
-            TableName: 'EasyConfig'
-        };
+        var params = createDescribeParams();
+        console.log(params);
 
         dynamodb.describeTable(params, function(err, data) {
             if (err) {
@@ -34,34 +49,7 @@ var DynamoWrapper = function() {
         });
     };
 
-    this.newTable = function(responseObject, name) {
-        // DONT USE
-
-        var params = {
-            TableName : "Test",
-            KeySchema: [       
-                { AttributeName: "year", KeyType: "HASH"},  //Partition key
-                { AttributeName: "title", KeyType: "RANGE" }  //Sort key
-            ],
-            AttributeDefinitions: [       
-                { AttributeName: "year", AttributeType: "N" },
-                { AttributeName: "title", AttributeType: "S" }
-            ],
-            ProvisionedThroughput: {       
-                ReadCapacityUnits: 10, 
-                WriteCapacityUnits: 10
-            }
-        };
-
-        dynamodb.createTable(params, function(err, data) {
-            if (err) {
-                console.error("Unable to create table. Error JSON:", JSON.stringify(err, null, 2));
-            } else {
-                console.log("Created table. Table description JSON:", JSON.stringify(data, null, 2));
-            }
-        });
-    };
-
+// 4)
     this.listTables = function(responseObject) {
         dynamodb.listTables(function(err, data) {
             if (err) {
@@ -73,52 +61,9 @@ var DynamoWrapper = function() {
         });
     };
 
-    this.getCustomer = function(responseObject, customer) {
-
-        var customerItem = {
-          name: "CustomerId",
-          type: "S",
-          value: customer
-        }
-
-        var params = Converter.createAwsGetItem(customerItem);
-
-        dynamodb.getItem(params, function(err, data) {
-          if (err) {
-            console.log(err, err.stack);
-            responseObject.send(err);
-          } else {
-            responseObject.send(data);
-          }
-        });
-    }
-
-    this.putCustomer = function(responseObject, customer, itemArray) {
-
-        itemArray.push({type: "S", name: "CustomerId", value: customer});
-
-        var params = Converter.createAwsPutItem(itemArray);
-
-        dynamodb.putItem(params, function(err, data) {
-          if (err) {
-            console.log(err, err.stack);
-            responseObject.send(err);
-          } else {
-            responseObject.send(data);
-          }
-        });
-    }
-
-
+// 5)
     this.customers = function(responseObject) {
-        var params = {
-          TableName: 'EasyConfig',
-          AttributesToGet: [
-            'CustomerId',
-          ],
-          ReturnConsumedCapacity: 'TOTAL',
-          Select: 'SPECIFIC_ATTRIBUTES'
-        };
+        var params = createScanParams(["CustomerId"]);
 
         dynamodb.scan(params, function(err, data) {
           if (err) {
@@ -130,15 +75,126 @@ var DynamoWrapper = function() {
           }
         });
     }
-}
+
+// 6)
+    this.getCustomer = function(responseObject, item) {
+
+        var params = createAwsGetParams(item);
+
+        dynamodb.getItem(params, function(err, data) {
+          if (err) {
+            console.log(err, err.stack);
+            responseObject.send(err);
+          } else {
+            responseObject.send(data);
+          }
+        });
+    }
+
+// 7)
+    this.putCustomer = function(responseObject, itemArray_or_awsItem) {
+        var params = createAwsPutParams(itemArray_or_awsItem);
+
+        dynamodb.putItem(params, function(err, data) {
+          if (err) {
+            console.log(err, err.stack);
+            responseObject.send(err);
+          } else {
+            responseObject.send(data);
+          }
+        });
+    }
+
+// 8)
+    this.newTable = function(responseObject, name, keyArray, attributeArray) {
+        var keyArray = [{ AttributeName: "year", KeyType: "HASH"}];
+        var attributeArray = [       
+            { AttributeName: "year", AttributeType: "N" },
+            { AttributeName: "title", AttributeType: "S" }
+        ];
+
+        var params = createNewTableParams("tableName", keyArray, attributeArray);
+
+        dynamodb.createTable(params, function(err, data) {
+            if (err) {
+                console.error("Unable to create table. Error JSON:", JSON.stringify(err, null, 2));
+            } else {
+                console.log("Created table. Table description JSON:", JSON.stringify(data, null, 2));
+            }
+        });
+    };
 
 // Utility functions
-var parseCustomerList = function(scanData) {
-    var customers = [];
-    _.each(scanData.Items, function(item) {
-        customers.push(item.CustomerId.S);
-    });
-    return customers;
-};
+    var parseCustomerList = function(scanData) {
+        var customers = [];
+        _.each(scanData.Items, function(item) {
+            customers.push(item.CustomerId.S);
+        });
+        return customers;
+    };
+
+    var createDescribeParams = function(options) {
+        if (options) {
+            console.log("Describe params aren't used, but they were provided:");
+            console.log(options);
+        }
+
+        var params = {
+            TableName: tableName
+        };
+
+        return params;
+    }
+
+    var createScanParams = function(attributeArray) {
+        var params = {
+          TableName: tableName,
+          ReturnConsumedCapacity: 'TOTAL',
+          Select: 'SPECIFIC_ATTRIBUTES'
+        };
+
+        params["AttributesToGet"] = attributeArray;
+        return params;
+    }
+
+    var createAwsGetParams = function(item) {
+        var param = { 
+          TableName: table,
+          ConsistentRead: false,
+          ReturnConsumedCapacity: 'TOTAL'
+        }
+        param["Key"] = !!converter ? converter.asAwsItem(item) : item;
+        return param;
+    }
+
+    var createAwsPutParams = function(itemArray_or_awsItem) {
+        var param = {
+          TableName: table,
+          ReturnConsumedCapacity: 'TOTAL',
+          ReturnItemCollectionMetrics: 'SIZE',
+          ReturnValues: 'NONE'
+        };
+
+        param["Item"] = !!converter ? converter.asAwsItem(itemArray_or_awsItem) : itemArray_or_awsItem;
+        return param;
+    }
+
+    var createNewTableParams = function(tableName, keyArray, attributeArray) {
+
+        var params = {
+            TableName : tableName,
+            ProvisionedThroughput: {       
+                ReadCapacityUnits: 1, 
+                WriteCapacityUnits: 1
+            }
+        };
+
+        param["AttributeDefinitions"] = attributeArray;
+        params["KeySchema"] = keyArray;
+
+        return params;
+    }
+}
+
 
 module.exports = DynamoWrapper;

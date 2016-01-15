@@ -21,7 +21,7 @@ var convertToAwsItem = function(itemArray) {
 
     newItem[item.name] = valueObject;
   });
-  
+
   return newItem;
 }
 
@@ -46,32 +46,7 @@ var convertToMyItem = function(awsItem) {
   return itemArray;
 }
 
-
 var Converter = function(tableName) {
-  var table = tableName;
-
-  this.createAwsPutItem = function(itemArray) {
-    var param = {
-      TableName: table,
-      ReturnConsumedCapacity: 'TOTAL',
-      ReturnItemCollectionMetrics: 'SIZE',
-      ReturnValues: 'NONE'
-    };
-
-    param["Item"] = !!(itemArray[0].type) ? convertToAwsItem(itemArray) : itemArray;
-    return param;
-  }
-
-  this.createAwsGetItem = function(item) {
-    var param = { 
-      TableName: table,
-      ConsistentRead: false,
-      ReturnConsumedCapacity: 'TOTAL'
-    }
-
-    param["Key"] = !!item.type ? convertToAwsItem([item]) : item;
-    return param;
-  }
 
   this.asAwsItem = function(itemArray) {
     return convertToAwsItem(itemArray);
@@ -80,11 +55,6 @@ var Converter = function(tableName) {
   this.asMyItem = function(awsItem) {
     return convertToMyItem(awsItem);
   }
-
-
 }
-
-
-
 
 module.exports = Converter;
