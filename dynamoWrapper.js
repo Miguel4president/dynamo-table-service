@@ -1,42 +1,31 @@
-// Simplify AWS Dynamo SDK
-var AWS = require('aws-sdk');
+var settings = require('./mySettings');
+
 var _ = require('underscore');
+var AWS = require('aws-sdk');
 
 AWS.config.update({
   region: 'us-west-2',
-  credentials: new AWS.SharedIniFileCredentials({profile: 'dynamoApp'})
+  credentials: new AWS.SharedIniFileCredentials({profile: settings.credProfile})
 });
 
 var dynamodb = new AWS.DynamoDB();
 
-// API
-// 1) setConverter  (converter)
-// 2) setTableName  (tableName)
-// 3) describe      (responseObject)
-// 4) listTables    (responseObject)
-// 5) customers     (responseObject)
-// 6) getCustomer   (responseObject, Item*)
-// 7) putCustomer   (responseObject, itemArray*)
-// 8) newTable      (responseObject, tableName, keyArray, attributeArray)
+var DynamoWrapper = function() {
+    var converter = settings.converter;
 
-// ** Item is awsForm or myForm (requires converter);
-var DynamoWrapper = function(table) {
-    var tableName = table;
-    var converter;
+    this.listTables = function(responseObject) {
+        dynamodb.listTables(function(err, data) {
+            if (err) {
+                console.log("error="+err);
+                responseObject.send(err);
+            } else {
+                responseObject.send(data);
+            }
+        });
+    };
 
-// 1)
-    this.setConverter = function(converter) {
-        this.converter = converter;
-    }
-
-// 2)
-    this.setTableName = function(name) {
-        tableName = name;
-    }
-
-// 3)
-    this.describe = function(responseObject) {
-        var params = createDescribeParams();
+    this.describe = function(responseObject, tableId) {
+        var params = createDescribeParams(tableId);
         console.log(params);
 
         dynamodb.describeTable(params, function(err, data) {
@@ -49,21 +38,8 @@ var DynamoWrapper = function(table) {
         });
     };
 
-// 4)
-    this.listTables = function(responseObject) {
-        dynamodb.listTables(function(err, data) {
-            if (err) {
-                console.log("error="+err);
-                responseObject.send(err);
-            } else {
-                responseObject.send(data);
-            }
-        });
-    };
-
-// 5)
-    this.customers = function(responseObject) {
-        var params = createScanParams(["CustomerId"]);
+    this.column = function(responseObject, tableId, columnName) {
+        var params = createScanParams(tableId, [columnName]);
 
         dynamodb.scan(params, function(err, data) {
           if (err) {
@@ -74,12 +50,11 @@ var DynamoWrapper = function(table) {
             responseObject.send(prettify);
           }
         });
-    }
+    };
 
-// 6)
-    this.getCustomer = function(responseObject, item) {
+    this.getAtKey = function(responseObject, tableId, item) {
 
-        var params = createAwsGetParams(item);
+        var params = createAwsGetParams(tableId, item);
 
         dynamodb.getItem(params, function(err, data) {
           if (err) {
@@ -89,11 +64,10 @@ var DynamoWrapper = function(table) {
             responseObject.send(data);
           }
         });
-    }
+    };
 
-// 7)
-    this.putCustomer = function(responseObject, itemArray_or_awsItem) {
-        var params = createAwsPutParams(itemArray_or_awsItem);
+    this.putAtKey = function(responseObject, tableId, itemArray_or_awsItem) {
+        var params = createAwsPutParams(tableId, itemArray_or_awsItem);
 
         dynamodb.putItem(params, function(err, data) {
           if (err) {
@@ -103,9 +77,9 @@ var DynamoWrapper = function(table) {
             responseObject.send(data);
           }
         });
-    }
+    };
 
-// 8)
+// Holy shnikes, work todo here
     this.newTable = function(responseObject, name, keyArray, attributeArray) {
         var keyArray = [{ AttributeName: "year", KeyType: "HASH"}];
         var attributeArray = [       
@@ -133,22 +107,13 @@ var DynamoWrapper = function(table) {
         return customers;
     };
 
-    var createDescribeParams = function(options) {
-        if (options) {
-            console.log("Describe params aren't used, but they were provided:");
-            console.log(options);
-        }
+    var createDescribeParams = function(tableId) {
+        return { TableName: tableId };
+    };
 
+    var createScanParams = function(tableId, attributeArray) {
         var params = {
-            TableName: tableName
-        };
-
-        return params;
-    }
-
-    var createScanParams = function(attributeArray) {
-        var params = {
-          TableName: tableName,
+          TableName: tableId,
           ReturnConsumedCapacity: 'TOTAL',
           Select: 'SPECIFIC_ATTRIBUTES'
         };
@@ -157,9 +122,9 @@ var DynamoWrapper = function(table) {
         return params;
     }
 
-    var createAwsGetParams = function(item) {
+    var createAwsGetParams = function(tableId, item) {
         var param = { 
-          TableName: table,
+          TableName: tableId,
           ConsistentRead: false,
           ReturnConsumedCapacity: 'TOTAL'
         }
@@ -167,9 +132,9 @@ var DynamoWrapper = function(table) {
         return param;
     }
 
-    var createAwsPutParams = function(itemArray_or_awsItem) {
+    var createAwsPutParams = function(tableId, itemArray_or_awsItem) {
         var param = {
-          TableName: table,
+          TableName: tableId,
           ReturnConsumedCapacity: 'TOTAL',
           ReturnItemCollectionMetrics: 'SIZE',
           ReturnValues: 'NONE'
@@ -179,10 +144,9 @@ var DynamoWrapper = function(table) {
         return param;
     }
 
-    var createNewTableParams = function(tableName, keyArray, attributeArray) {
-
+    var createNewTableParams = function(tableId, keyArray, attributeArray) {
         var params = {
-            TableName : tableName,
+            TableName : tableId,
             ProvisionedThroughput: {       
                 ReadCapacityUnits: 1, 
                 WriteCapacityUnits: 1
