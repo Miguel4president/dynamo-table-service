@@ -1,24 +1,22 @@
+/*
+The Server has 2 responsiblities.
+1) Defining Routes.
+2) Extracting Request parameters.
+*/
+
 var settings = require('./mySettings');
 
 var app = require('express')();
+var bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 var dynamo = new (require('./dynamoWrapper'))();
 
-//_____________________TESTING STUFF TO MOVE_________________________
-var awsStyle = { "testPut" : {"S" : "harpsichord"}};
-var myDynamo = { type: "S", name: "testPut", value: "harpsichord" };
+var sendResponse = function(responseObject) {
 
-var createAwsItem = function(customer) {
-  var item = {
-    "CustomerId" : { "S" : customer },
-    "fieldName"  : { "S" : "new table params success!"  },
-    "numberField": { "N" : "123"    }
-  };
-  return item;
 }
-//___________________________________________________________________
-
-
 
 // ____________________________________EXPRESS ROUTES____________________________
 
@@ -47,28 +45,32 @@ app.route('/tables')
 // Table Specific
 app.route('/table/:tableId')
   .get(function(req, res) {
-    console.log("Describe hit. Describing table: "+req.params.tableId);
-    dynamo.describe(res, req.params.tableId);
+    var tableId = req.params.tableId;
+
+    dynamo.describe(res, tableId);
   })
   .post(function(req, res) {
-    res.send("POST to table with ID: "+req.params.tableId+". Doesn't do anything yet, will be a create.");
+    var tableId = req.params.tableId;
+    res.send("POST to table with ID: "+tableId+". Doesn't do anything yet, will be a create.");
   });
 
 app.route('/table/:tableId/column/:column')
   .get(function(req, res) {
-    console.log("GET to entires.");
-    dynamo.column(res, req.params.tableId, req.params.column);
+    var tableId = req.params.tableId;
+    var column = req.params.column;
+
+    dynamo.getColumnValues(res, tableId, column);
   })
   .put(function(req, res) {
-    res.send("PUT to keys. This has no effect.");
+    res.send("PUT to column. This has no effect.");
     res.end();
   })
   .delete(function(req, res) {
-    res.send("DELETE to keys. This has no effect.");
+    res.send("DELETE to column. This has no effect.");
     res.end();
   })
   .post(function(req, res) {
-    res.send("POST to keys. This has no effect.");
+    res.send("POST to column. This has no effect.");
     res.end();
   });
 
@@ -76,12 +78,18 @@ app.route('/table/:tableId/column/:column')
 // Table and Key Specific
 app.route('/table/:tableId/key/:key')
   .get(function(req, res) {
-    console.log("Get customer table data for : "+req.params.key);
-    dynamo.getAtKey(res, req.params.tableId, { "CustomerId" : { "S" : req.params.key }});
+    var primaryKey = req.params.key;
+    var tableId = req.params.tableId;
+
+    dynamo.getAtKey(res, tableId, primaryKey);
   })
   .put(function(req, res) {
-    console.log("Put content in the customer table for : "+req.params.key);
-    dynamo.putAtKey(res, req.params.tableId, createAwsItem(req.params.key));
+    // myNotation requires an array, awsNotation requires a map
+    var primaryKey = req.params.key;
+    var tableId = req.params.tableId;
+    var columnObjs = JSON.parse(req.body.columnInfo);
+
+    dynamo.putAtKey(res, tableId, primaryKey, columnObjs);
   })
   .delete(function(req, res) {
     res.send("Delete from the customer table : "+req.params.key+". This doesn't currently do anything.");

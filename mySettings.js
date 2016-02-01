@@ -2,7 +2,17 @@ var Converter = new (require('./dynamoConverter'))();
 
 module.exports = {
   port: 3000,
-  converter: undefined,
+  converter: null,
   credProfile: 'dynamoApp',
+  tables: {
+    "EasyConfig" : {
+      primaryKeyName: 'CustomerId',
+      primaryKeyType: 'S',
+    },
+    "tableId" : {
+      primaryKeyName: 'pkFieldName',
+      primaryKeyType: 'pkType'
+    }
+  }
 }
 

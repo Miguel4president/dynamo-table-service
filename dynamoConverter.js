@@ -1,21 +1,15 @@
 
 var _ = require('underscore');
 
-var myDesign = {
-  type: "S",
-  name: "fieldName",
-  value: "valueOfSaidField"
-}
-
-var awsDesign = {
-  "fieldName" : { "S" : "value" }
-}
-
 // Input items have descriptive Keys
 var convertToAwsItem = function(itemArray) {
+  if (itemArray.length < 1 || !isMyItem(itemArray[0])) {
+    return itemArray;
+  }
+
   var newItem = {};
 
-  _.each(itemArray, function(item) {
+  _.each(itemArray, function(item, key) {
     var valueObject = {};
     valueObject[item.type] = item.value;
 
@@ -37,7 +31,7 @@ var convertToMyItem = function(awsItem) {
     // Loop over the content of the hopefully only item there which will be the type
     _.each(value, function(val, key) {
       myItem.type = key;
-      myItem.value = value;
+      myItem.value = value[key];
     })
 
     itemArray.push(myItem);
@@ -46,7 +40,14 @@ var convertToMyItem = function(awsItem) {
   return itemArray;
 }
 
-var Converter = function(tableName) {
+var isMyItem = function(item) {
+  if (item.type == undefined || item.name == undefined || item.value == undefined) {
+    return false;
+  }
+  return true;
+}
+
+var Converter = function() {
 
   this.asAwsItem = function(itemArray) {
     return convertToAwsItem(itemArray);

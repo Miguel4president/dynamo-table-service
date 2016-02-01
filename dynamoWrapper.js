@@ -1,4 +1,5 @@
 var settings = require('./mySettings');
+var paramBuilder = require('./modelBuilder');
 
 var _ = require('underscore');
 var AWS = require('aws-sdk');
@@ -11,7 +12,6 @@ AWS.config.update({
 var dynamodb = new AWS.DynamoDB();
 
 var DynamoWrapper = function() {
-    var converter = settings.converter;
 
     this.listTables = function(responseObject) {
         dynamodb.listTables(function(err, data) {
@@ -25,7 +25,7 @@ var DynamoWrapper = function() {
     };
 
     this.describe = function(responseObject, tableId) {
-        var params = createDescribeParams(tableId);
+        var params = paramBuilder.createAwsDescribeParams(tableId);
         console.log(params);
 
         dynamodb.describeTable(params, function(err, data) {
@@ -38,23 +38,25 @@ var DynamoWrapper = function() {
         });
     };
 
-    this.column = function(responseObject, tableId, columnName) {
-        var params = createScanParams(tableId, [columnName]);
+    this.getColumnValues = function(responseObject, tableId, columnName) {
+        var params = paramBuilder.createAwsScanParams(tableId, [columnName]);
 
         dynamodb.scan(params, function(err, data) {
           if (err) {
             console.log(err, err.stack);
             responseObject.send(err);
           } else {
-            var prettify = parseCustomerList(data).join(' and ');
+            var prettify = paramBuilder.parseCustomerList(data).join(' and ');
             responseObject.send(prettify);
           }
         });
     };
 
-    this.getAtKey = function(responseObject, tableId, item) {
+    this.getAtKey = function(responseObject, tableId, primaryKey) {
+        // TODO key thing;
 
-        var params = createAwsGetParams(tableId, item);
+
+        var params = paramBuilder.createAwsGetParams(tableId, primaryKey);
 
         dynamodb.getItem(params, function(err, data) {
           if (err) {
@@ -66,8 +68,8 @@ var DynamoWrapper = function() {
         });
     };
 
-    this.putAtKey = function(responseObject, tableId, itemArray_or_awsItem) {
-        var params = createAwsPutParams(tableId, itemArray_or_awsItem);
+    this.putAtKey = function(responseObject, tableId, primaryKey, columnObjs) {
+        var params = paramBuilder.createAwsPutParams(tableId, primaryKey, columnObjs);
 
         dynamodb.putItem(params, function(err, data) {
           if (err) {
@@ -87,7 +89,7 @@ var DynamoWrapper = function() {
             { AttributeName: "title", AttributeType: "S" }
         ];
 
-        var params = createNewTableParams("tableName", keyArray, attributeArray);
+        var params = paramBuilder.createNewTableParams("tableName", keyArray, attributeArray);
 
         dynamodb.createTable(params, function(err, data) {
             if (err) {
@@ -98,66 +100,6 @@ var DynamoWrapper = function() {
         });
     };
 
-// Utility functions
-    var parseCustomerList = function(scanData) {
-        var customers = [];
-        _.each(scanData.Items, function(item) {
-            customers.push(item.CustomerId.S);
-        });
-        return customers;
-    };
-
-    var createDescribeParams = function(tableId) {
-        return { TableName: tableId };
-    };
-
-    var createScanParams = function(tableId, attributeArray) {
-        var params = {
-          TableName: tableId,
-          ReturnConsumedCapacity: 'TOTAL',
-          Select: 'SPECIFIC_ATTRIBUTES'
-        };
-
-        params["AttributesToGet"] = attributeArray;
-        return params;
-    }
-
-    var createAwsGetParams = function(tableId, item) {
-        var param = { 
-          TableName: tableId,
-          ConsistentRead: false,
-          ReturnConsumedCapacity: 'TOTAL'
-        }
-        param["Key"] = !!converter ? converter.asAwsItem(item) : item;
-        return param;
-    }
-
-    var createAwsPutParams = function(tableId, itemArray_or_awsItem) {
-        var param = {
-          TableName: tableId,
-          ReturnConsumedCapacity: 'TOTAL',
-          ReturnItemCollectionMetrics: 'SIZE',
-          ReturnValues: 'NONE'
-        };
-
-        param["Item"] = !!converter ? converter.asAwsItem(itemArray_or_awsItem) : itemArray_or_awsItem;
-        return param;
-    }
-
-    var createNewTableParams = function(tableId, keyArray, attributeArray) {
-        var params = {
-            TableName : tableId,
-            ProvisionedThroughput: {       
-                ReadCapacityUnits: 1, 
-                WriteCapacityUnits: 1
-            }
-        };
-
-        param["AttributeDefinitions"] = attributeArray;
-        params["KeySchema"] = keyArray;
-
-        return params;
-    }
 }
 
 
