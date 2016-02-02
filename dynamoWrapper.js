@@ -26,11 +26,9 @@ var DynamoWrapper = function() {
 
     this.describe = function(responseObject, tableId) {
         var params = paramBuilder.createAwsDescribeParams(tableId);
-        console.log(params);
 
         dynamodb.describeTable(params, function(err, data) {
             if (err) {
-                console.log(err, err.stack);
                 responseObject.send(err);
             } else {
                 responseObject.send(data);
@@ -43,24 +41,19 @@ var DynamoWrapper = function() {
 
         dynamodb.scan(params, function(err, data) {
           if (err) {
-            console.log(err, err.stack);
             responseObject.send(err);
           } else {
-            var prettify = paramBuilder.parseCustomerList(data).join(' and ');
+            var prettify = paramBuilder.parseCustomerList(data, columnName).join(' and ');
             responseObject.send(prettify);
           }
         });
     };
 
     this.getAtKey = function(responseObject, tableId, primaryKey) {
-        // TODO key thing;
-
-
-        var params = paramBuilder.createAwsGetParams(tableId, primaryKey);
+        var params = paramBuilder.primaryKey(tableId, primaryKey);
 
         dynamodb.getItem(params, function(err, data) {
           if (err) {
-            console.log(err, err.stack);
             responseObject.send(err);
           } else {
             responseObject.send(data);
@@ -73,7 +66,6 @@ var DynamoWrapper = function() {
 
         dynamodb.putItem(params, function(err, data) {
           if (err) {
-            console.log(err, err.stack);
             responseObject.send(err);
           } else {
             responseObject.send(data);
@@ -81,14 +73,7 @@ var DynamoWrapper = function() {
         });
     };
 
-// Holy shnikes, work todo here
     this.newTable = function(responseObject, name, keyArray, attributeArray) {
-        var keyArray = [{ AttributeName: "year", KeyType: "HASH"}];
-        var attributeArray = [       
-            { AttributeName: "year", AttributeType: "N" },
-            { AttributeName: "title", AttributeType: "S" }
-        ];
-
         var params = paramBuilder.createNewTableParams("tableName", keyArray, attributeArray);
 
         dynamodb.createTable(params, function(err, data) {

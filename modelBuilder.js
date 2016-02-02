@@ -1,20 +1,13 @@
-/*
-The modelBuilder transforms data to and from AWS notation.
-  1) Creates AWS params from component parts.
-  2) Converts AWS return values into human readable data.
-*/
-
 var settings = require('./mySettings');
 var _ = require('underscore');
 
 var Builder = {
   converter : settings.converter,
 
-  // Make this generic
-  parseCustomerList : function(scanData) {
+  parseCustomerList : function(scanData, columnName) {
     var customers = [];
     _.each(scanData.Items, function(item) {
-        customers.push(item.CustomerId.S);
+        customers.push(item[columnName].S);
     });
     return customers;
   },

@@ -5,11 +5,12 @@ var Converter = new (require('../dynamoConverter'))();
 
 // Object setup
 var tableName = 'EasyConfig';
-var attrArray = ['attr1', 'attr2'];
+var scanAttributeArray = ['attr1', 'attr2'];
 var primaryKeyName = "CustomerId";
 var primaryKey = "bob";
-var newTableKeyArray = [];
-var newTableAttributeArray = [];
+var newTableKeyArray = [ { AttributeName: "year", KeyType: "S"} ];
+var newTableAttributeArray = [ { AttributeName: "year", AttributeType: "N" },
+                               { AttributeName: "title", AttributeType: "S" } ];
 
 var awsKeyObject = {};
 awsKeyObject[primaryKeyName] = { "S" : "bob" };
@@ -40,7 +41,7 @@ var awsScanParams = {
   TableName: tableName,
   ReturnConsumedCapacity: 'TOTAL',
   Select: 'SPECIFIC_ATTRIBUTES',
-  AttributesToGet : attrArray
+  AttributesToGet : scanAttributeArray
 };
 
 var awsGetParams = {
@@ -68,8 +69,8 @@ var awsNewTableParams = {
       ReadCapacityUnits: 1, 
       WriteCapacityUnits: 1
   },
-  AttributeDefinitions: [],
-  KeySchema: []
+  KeySchema: newTableKeyArray,
+  AttributeDefinitions: newTableAttributeArray
 }
 
 
@@ -82,6 +83,7 @@ var requiredFields = {
   newTable : ['TableName', 'ProvisionedThroughput', 'AttributeDefinitions', 'KeySchema']
 };
 
+// Test Builders
 var requiredFieldTestTitle = function(itemType, converterBoolean) {
   var fieldNumber = requiredFields[itemType].length;
   var converterText = converterBoolean ? " WITH a converter" : " WITHOUT a converter";
@@ -124,11 +126,11 @@ describe('Builder', function() {
 
   describe('#parseCustomerList()', function() {
     it('should return an array of values for ideal scan data', function() {
-      assert.deepEqual(Builder.parseCustomerList(idealScanData), ['bob', "nandan"]);
+      assert.deepEqual(Builder.parseCustomerList(idealScanData, primaryKeyName), ['bob', "nandan"]);
     });
 
     it('should return return an empty array if there is no scan data', function() {
-      assert.deepEqual(Builder.parseCustomerList(emptyScanData), []);
+      assert.deepEqual(Builder.parseCustomerList(emptyScanData, primaryKeyName), []);
     });
   });
 
@@ -145,11 +147,11 @@ describe('Builder', function() {
 
   describe('#createAwsScanParams()', function() {
     it(requiredFieldTestTitle('scan', false), function() {
-      testRequiredFieldsFor('scan', Builder.createAwsScanParams(tableName, attrArray));
+      testRequiredFieldsFor('scan', Builder.createAwsScanParams(tableName, scanAttributeArray));
     });
 
     it('should return a valid scan param', function() {
-      assert.deepEqual(Builder.createAwsScanParams(tableName, attrArray), awsScanParams);
+      assert.deepEqual(Builder.createAwsScanParams(tableName, scanAttributeArray), awsScanParams);
     });
   });
 

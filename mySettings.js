@@ -8,10 +8,6 @@ module.exports = {
     "EasyConfig" : {
       primaryKeyName: 'CustomerId',
       primaryKeyType: 'S',
-    },
-    "tableId" : {
-      primaryKeyName: 'pkFieldName',
-      primaryKeyType: 'pkType'
     }
   }
 }

@@ -1,29 +1,12 @@
-/*
-The Server has 2 responsiblities.
-1) Defining Routes.
-2) Extracting Request parameters.
-*/
-
 var settings = require('./mySettings');
+var dynamo = new (require('./dynamoWrapper'))();
 
 var app = require('express')();
-var bodyParser = require('body-parser');
 
+var bodyParser = require('body-parser');
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-var dynamo = new (require('./dynamoWrapper'))();
-
-var sendResponse = function(responseObject) {
-
-}
-
-// ____________________________________EXPRESS ROUTES____________________________
-
-app.get('/status', function(req, res) {
-  console.log("Status hit.");
-  res.send("Server is up. Idk about AWS tho.");
-});
 
 app.route('/tables')
   .get(function(req, res) {
