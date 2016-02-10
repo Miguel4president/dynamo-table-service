@@ -8,9 +8,24 @@ var tableName = 'EasyConfig';
 var scanAttributeArray = ['attr1', 'attr2'];
 var primaryKeyName = "CustomerId";
 var primaryKey = "bob";
-var newTableKeyArray = [ { AttributeName: "year", KeyType: "S"} ];
-var newTableAttributeArray = [ { AttributeName: "year", AttributeType: "N" },
-                               { AttributeName: "title", AttributeType: "S" } ];
+
+var newTable = {
+  name: "testTable",
+  keyName: "coolKey",
+  keyType: "S",
+  keyObject: { AttributeName: 'coolKey', KeyType: 'HASH'},
+  attributeObject: { AttributeName: 'coolKey', AttributeType: 'S'}
+};
+
+var validNewTableParams = {
+  TableName : newTable.name,
+  ProvisionedThroughput: {       
+      ReadCapacityUnits: 1, 
+      WriteCapacityUnits: 1
+  },
+  KeySchema: [newTable.keyObject],
+  AttributeDefinitions: [newTable.attributeObject]
+}
 
 var awsKeyObject = {};
 awsKeyObject[primaryKeyName] = { "S" : "bob" };
@@ -63,23 +78,23 @@ var awsPutParams = {
   }
 }
 
-var awsNewTableParams = {
-  TableName : tableName,
-  ProvisionedThroughput: {       
-      ReadCapacityUnits: 1, 
-      WriteCapacityUnits: 1
-  },
-  KeySchema: newTableKeyArray,
-  AttributeDefinitions: newTableAttributeArray
+var awsDeleteRowParams = {
+  TableName: 'EasyConfig',
+  ReturnConsumedCapacity: 'TOTAL',
+  ReturnItemCollectionMetrics: 'SIZE',
+  ReturnValues: 'ALL_OLD',
+  Key: awsKeyObject
 }
 
 
 // Required Fields
 var requiredFields = {
   describe : ['TableName'],
+  deleteTable : ['TableName'],
   get : ['TableName', 'ConsistentRead', 'ReturnConsumedCapacity', 'Key'],
   scan : ['TableName', 'ReturnConsumedCapacity', 'Select', 'AttributesToGet'],
   put : ['TableName', 'ReturnConsumedCapacity', 'ReturnItemCollectionMetrics', 'ReturnValues', 'Item'],
+  deleteRow : ['TableName', 'ReturnConsumedCapacity', 'ReturnItemCollectionMetrics', 'ReturnValues', 'Key'],
   newTable : ['TableName', 'ProvisionedThroughput', 'AttributeDefinitions', 'KeySchema']
 };
 
@@ -202,14 +217,39 @@ describe('Builder', function() {
 
   });
 
+  describe('#createAwsDeleteRowParams()', function() {
+
+    it(requiredFieldTestTitle('deleteRow', false), function() {
+      Builder.converter = null;
+      testRequiredFieldsFor('deleteRow', Builder.createAwsDeleteRowParams(tableName, 'bob'));
+    });
+
+    it('should return a valid param WITHOUT a converter', function() {
+      Builder.converter = null;
+      assert.deepEqual(Builder.createAwsDeleteRowParams(tableName, 'bob'), awsDeleteRowParams);
+    });
+
+  });
+
   describe('#createNewTableParams()', function() {
     it(requiredFieldTestTitle('newTable', false), function() {
-      testRequiredFieldsFor('newTable', Builder.createNewTableParams(tableName, newTableKeyArray, newTableAttributeArray));
+      testRequiredFieldsFor('newTable', Builder.createNewTableParams(tableName, newTable.keyName, newTable.keyType));
     });
 
     it('should return a valid newTable param', function() {
       Builder.converter = null;
-      assert.deepEqual(Builder.createNewTableParams(tableName, newTableKeyArray, newTableAttributeArray), awsNewTableParams);
+      assert.deepEqual(Builder.createNewTableParams(newTable.name, newTable.keyName, newTable.keyType), validNewTableParams);
     });
   });
+
+  describe('#createDeleteTableParams()', function() {
+    it(requiredFieldTestTitle('deleteTable', false), function() {
+      testRequiredFieldsFor('deleteTable', Builder.createDeleteTableParams(tableName));
+    });
+
+    it('should return a valid deleteTable param', function() {
+      var param = Builder.createDeleteTableParams(tableName);
+      assert(param["TableName"], tableName);
+    });
+  })
 });

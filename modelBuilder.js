@@ -1,6 +1,10 @@
 var settings = require('./mySettings');
 var _ = require('underscore');
 
+var createTableNameObject = function(tableId) {
+  return { TableName: tableId };
+};
+
 var Builder = {
   converter : settings.converter,
 
@@ -11,10 +15,8 @@ var Builder = {
     });
     return customers;
   },
-
-  createAwsDescribeParams : function(tableId) {
-    return { TableName: tableId };
-  },
+  createDeleteTableParams : createTableNameObject,
+  createAwsDescribeParams : createTableNameObject,
 
   createAwsScanParams : function(tableId, attributeNameArray) {
     var params = {
@@ -55,7 +57,19 @@ var Builder = {
     return param;
   },
 
-  createNewTableParams : function(tableId, keyArray, attributeArray) {
+  createAwsDeleteRowParams : function(tableId, primaryKey) {
+    var param = {
+      TableName: tableId,
+      ReturnConsumedCapacity: 'TOTAL',
+      ReturnItemCollectionMetrics: 'SIZE',
+      ReturnValues: 'ALL_OLD'
+    };
+
+    param["Key"] = this.createPrimaryKeyObject(tableId, primaryKey);
+    return param;
+  },
+
+  createNewTableParams : function(tableId, primaryKeyName, primaryKeyType) {
     var params = {
       TableName : tableId,
       ProvisionedThroughput: {       
@@ -63,9 +77,17 @@ var Builder = {
         WriteCapacityUnits: 1
       }
     };
+    var key = {};
+    key['AttributeName'] = primaryKeyName;
+    key['KeyType'] = 'HASH';
 
-    params["AttributeDefinitions"] = attributeArray;
-    params["KeySchema"] = keyArray;
+    var attribute = {};
+    attribute['AttributeName'] = primaryKeyName;
+    attribute['AttributeType'] = primaryKeyType
+
+
+    params["AttributeDefinitions"] = [attribute];
+    params["KeySchema"] = [key];
 
     return params;
   },

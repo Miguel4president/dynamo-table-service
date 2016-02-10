@@ -1,91 +1,92 @@
-var settings = require('./mySettings');
 var paramBuilder = require('./modelBuilder');
-
 var _ = require('underscore');
 var AWS = require('aws-sdk');
 
-AWS.config.update({
-  region: 'us-west-2',
-  credentials: new AWS.SharedIniFileCredentials({profile: settings.credProfile})
-});
+var dynamoWrapper = function(settings) {
+  this.settings = settings;  
+  AWS.config.update({
+    region: 'us-west-2',
+    credentials: new AWS.SharedIniFileCredentials({profile: this.settings.credProfile})
+  });
+  var dynamodb = new AWS.DynamoDB();
 
-var dynamodb = new AWS.DynamoDB();
-
-var DynamoWrapper = function() {
-
-    this.listTables = function(responseObject) {
-        dynamodb.listTables(function(err, data) {
-            if (err) {
-                console.log("error="+err);
-                responseObject.send(err);
-            } else {
-                responseObject.send(data);
-            }
-        });
+  var createPromiseCallback = function(resolve, reject) {
+    return function(err, data) {
+      err ? reject(Error(err)) : resolve(data);
     };
+  }
 
-    this.describe = function(responseObject, tableId) {
-        var params = paramBuilder.createAwsDescribeParams(tableId);
+  this.listTables = function() {
 
-        dynamodb.describeTable(params, function(err, data) {
-            if (err) {
-                responseObject.send(err);
-            } else {
-                responseObject.send(data);
-            }
-        });
-    };
+    return new Promise(function(resolve, reject) {
+      dynamodb.listTables(createPromiseCallback(resolve, reject));
+    });
 
-    this.getColumnValues = function(responseObject, tableId, columnName) {
-        var params = paramBuilder.createAwsScanParams(tableId, [columnName]);
+  };
 
-        dynamodb.scan(params, function(err, data) {
-          if (err) {
-            responseObject.send(err);
-          } else {
-            var prettify = paramBuilder.parseCustomerList(data, columnName).join(' and ');
-            responseObject.send(prettify);
-          }
-        });
-    };
+  this.describe = function(tableId) {
+    var params = paramBuilder.createAwsDescribeParams(tableId);
+    return new Promise(function(resolve, reject) {
+      dynamodb.describeTable(params, createPromiseCallback(resolve, reject));
+    });
+  };
 
-    this.getAtKey = function(responseObject, tableId, primaryKey) {
-        var params = paramBuilder.primaryKey(tableId, primaryKey);
+  this.getColumnValues = function(tableId, columnName) {
+    var params = paramBuilder.createAwsScanParams(tableId, [columnName]);
 
-        dynamodb.getItem(params, function(err, data) {
-          if (err) {
-            responseObject.send(err);
-          } else {
-            responseObject.send(data);
-          }
-        });
-    };
+    return new Promise(function(resolve, reject) {
+      dynamodb.scan(params, function(err, data) {
+        if (err) {
+          reject(Error(err));
+        } else {
+          var prettyData = paramBuilder.parseCustomerList(data, columnName).join(' and ');
+          resolve(prettyData);
+        }
+      });
+    });
 
-    this.putAtKey = function(responseObject, tableId, primaryKey, columnObjs) {
-        var params = paramBuilder.createAwsPutParams(tableId, primaryKey, columnObjs);
+  };
 
-        dynamodb.putItem(params, function(err, data) {
-          if (err) {
-            responseObject.send(err);
-          } else {
-            responseObject.send(data);
-          }
-        });
-    };
+  this.getRow = function(tableId, primaryKey) {
+    var params = paramBuilder.createAwsGetParams(tableId, primaryKey);
 
-    this.newTable = function(responseObject, name, keyArray, attributeArray) {
-        var params = paramBuilder.createNewTableParams("tableName", keyArray, attributeArray);
+    return new Promise(function(resolve, reject) {
+      dynamodb.getItem(params, createPromiseCallback(resolve, reject));
+    });
+  };
 
-        dynamodb.createTable(params, function(err, data) {
-            if (err) {
-                console.error("Unable to create table. Error JSON:", JSON.stringify(err, null, 2));
-            } else {
-                console.log("Created table. Table description JSON:", JSON.stringify(data, null, 2));
-            }
-        });
-    };
+  this.putRow = function(tableId, primaryKey, columnObjs) {
+    var params = paramBuilder.createAwsPutParams(tableId, primaryKey, columnObjs);
 
-}
+    return new Promise(function(resolve, reject) {
+      dynamodb.putItem(params, createPromiseCallback(resolve, reject));
+    });
+  };
 
+  this.deleteRow = function(tableId, primaryKey) {
+    var params = paramBuilder.createAwsDeleteRowParams(tableId, primaryKey);
 
-module.exports = DynamoWrapper;
+    return new Promise(function(resolve, reject) {
+        dynamodb.deleteItem(params, createPromiseCallback(resolve, reject));
+    });
+  };
+
+  this.newTable = function(tableId, primaryKeyName, primaryKeyType) {
+    var params = paramBuilder.createNewTableParams(tableId, primaryKeyName, primaryKeyType);
+
+    return new Promise(function(resolve, reject) {
+      dynamodb.createTable(params, createPromiseCallback(resolve, reject));
+    });
+  };
+
+  this.deleteTable = function(tableId) {
+    var params = paramBuilder.createDeleteTableParams(tableId);
+
+    return new Promise(function(resolve, reject) {
+        dynamodb.deleteTable(params, createPromiseCallback(resolve, reject));
+    });
+  };
+
+};
+
+module.exports = dynamoWrapper;
