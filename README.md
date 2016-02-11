@@ -1,12 +1,14 @@
-# Dynamo Server Wrapper
+# Dynamo Table Service
 - Interactwith your DynamoDB using simple http requests to a local server!
 
-This application is an AWS DynamoDB Wrapper served on a local node server.
-The purpose is to separate the backend data storage from the UI work that is to come.
+This local node server exposes easy to understand endpoints for managing your AWS DynamoDB.
 
-The node server runs on localhost:3000 by default, easy to change configurations are saved in the 'mySettings.js' file.
+Separate backend data storage from any UI project you lay on top.
+- Endpoints exposed at localhost:3000
+- Easy to change configuration file
+- AWS Authentication through credentials file (~/.aws/credentials)
 
-The aws-sdk does its own authentication based on a credentials file (~/.aws/credentials). The Profile name is in the 'mySettings.js' with a default of 'dynamoApp'
+The Profile name is in the 'mySettings.js' with a default of 'dynamoApp'
 
 ## What can I do with it?
 The target functionality is to let this app run in the background and make saving things to dynamo a little easier.
