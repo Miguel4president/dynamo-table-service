@@ -25,17 +25,17 @@ http request -> main -> dynamoWrapper -> modelBuilder -> dynamoWrapper -> respon
 
 ## How to get it running!
 
-1) Insert AWS Dynamo credentials into (`~/.aws/credentials`)  
+1. Insert AWS Dynamo credentials into (`~/.aws/credentials`)  
   The Profile name is in the `mySettings.js` with a default of dynamo-table-service
   > [dynamo-table-service]  
   > aws_access_key_id = YOUR_LESS_SECRET_ACCESS_KEY  
   > aws_secret_access_key = YOUR_SECRET_KEY  
   
-2) Clone it.
-3) `npm install`
-  * `mocha` (see the tests go nuts!)
-4) `node main`
-5) Profit.
+2. Clone it.  
+3. `npm install`  
+  * `mocha` (see the tests go nuts!)  
+4. `node main`  
+5. Profit.
 
 ## URL Mappings from base (localhost:PORT)
 1. /tables  
@@ -43,18 +43,18 @@ http request -> main -> dynamoWrapper -> modelBuilder -> dynamoWrapper -> respon
 2. /table/TABLE_ID   
   * GET - Describes table.  
   * PUT - Creates table with TABLE_ID.  
-   * Requires JSON body arguments.  
-   * keyName - String name for the table Primary Key.  
-   * keyType - Type of Key, is aws format i.e. S/N/B.  
+    * Requires JSON body arguments.  
+    * keyName - String name for the table Primary Key.  
+    * keyType - Type of Key, is aws format i.e. S/N/B.  
 3. /table/TABLE_ID/column/COLUMN_ID  
   * GET - Returns that specified column value from every row.  
 4. /table/TABLE_ID/key/KEY
   * GET - Returns all row information for specified KEY.  
   * DELETE - Deletes row and returns the data that was in it.  
   * PUT - Creates row for KEY in table TABLE_ID.  
-   * Requires JSON body arguments.  
-   * key - primaryKey for your row.  
-   * columnInfo - a map of Column data (example below).  
+    * Requires JSON body arguments.  
+    * key - primaryKey for your row.  
+    * columnInfo - a map of Column data (example below).  
 
 Example of columnInfo JSON:
 ```javascript
