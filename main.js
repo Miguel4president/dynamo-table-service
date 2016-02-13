@@ -1,5 +1,5 @@
 var settings = require('./mySettings');
-var dynamo = new (require('./dynamoWrapper'))(settings);
+var dynamo = new (require('./src/dynamoWrapper'))(settings);
 
 var app = require('express')();
 
@@ -15,21 +15,24 @@ var standardReject = function(res) {
   return function(result) { res.send("Sorry, there was an error: \n"+result); };
 }
 
+// ES6 Templating
+var unsupportedOp = function(req, res) {
+  res.send(`Unsupported Operation: ${req.method} to ${req.url}.`);
+  res.end();
+}
+
 app.route('/tables')
   .get(function(req, res) {
     dynamo.listTables().then(standardResolve(res), standardReject(res));
   })
   .put(function(req, res) {
-    res.send("PUT to tables. his has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   })
   .delete(function(req, res) {
-    res.send("DELETE to tables. This has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   })
   .post(function(req, res) {
-    res.send("POST to tables. This has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   });
 
 // Table Specific
@@ -56,16 +59,13 @@ app.route('/table/:tableId/column/:column')
     dynamo.getColumnValues(tableId, column).then(standardResolve(res), standardReject(res));
   })
   .put(function(req, res) {
-    res.send("PUT to column. This has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   })
   .delete(function(req, res) {
-    res.send("DELETE to column. This has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   })
   .post(function(req, res) {
-    res.send("POST to column. This has no effect.");
-    res.end();
+    unsupportedOp(req, res);
   });
 
 
@@ -89,8 +89,7 @@ app.route('/table/:tableId/key/:key')
     dynamo.deleteRow(tableId, primaryKey).then(standardResolve(res), standardReject(res));
   })
   .post(function(req, res) {
-    res.send("Post to the customer table for : "+req.params.key+". This doesn't currently do anything.");
-    res.end();
+    unsupportedOp(req, res);
   });
 
 

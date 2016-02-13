@@ -1,4 +1,4 @@
-var settings = require('./mySettings');
+var settings = require('../mySettings');
 var _ = require('underscore');
 
 var createTableNameObject = function(tableId) {

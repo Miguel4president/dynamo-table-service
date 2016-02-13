@@ -1,7 +1,7 @@
 var assert = require('assert');
-var Builder = require('../modelBuilder');
 var _ = require('underscore');
-var Converter = new (require('../dynamoConverter'))();
+var Builder = require('../src/modelBuilder');
+var Converter = new (require('../src/dynamoConverter'))();
 
 // Object setup
 var tableName = 'EasyConfig';

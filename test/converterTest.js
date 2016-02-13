@@ -1,5 +1,5 @@
 var assert = require('assert');
-var Converter = new (require('../dynamoConverter'))();
+var Converter = new (require('../src/dynamoConverter'))();
 
 // _________________________SETUP
 var myDesign = {

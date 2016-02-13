@@ -9,7 +9,7 @@ chai.use(chaiAsPromised);
 chai.should();
 
 var settings = require('../mySettings');
-var Wrapper = new (require('../dynamoWrapper'))(settings);
+var Wrapper = new (require('../src/dynamoWrapper'))(settings);
 
 // Tests
 

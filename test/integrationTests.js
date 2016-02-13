@@ -9,7 +9,7 @@ chai.should();
 
 // Thing to test
 var settings = require('../mySettings');
-var gen = new (require('../dynamoWrapper'))(settings);
+var gen = new (require('../src/dynamoWrapper'))(settings);
 
 // Test data
 var testTable = {

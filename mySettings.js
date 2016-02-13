@@ -1,4 +1,4 @@
-var Converter = new (require('./dynamoConverter'))();
+var Converter = new (require('./src/dynamoConverter'))();
 
 module.exports = {
   port: 3000,
